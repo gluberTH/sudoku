@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Судоку</title>
+    <style>
+        :root {
+            --bg-color: #f0f4f8;
+            --board-bg: #ffffff;
+            --border-color: #2c3e50;
+            --cell-border: #bdc3c7;
+            --text-color: #2c3e50;
+            --text-fixed: #2980b9;
+            --text-error: #e74c3c;
+            --bg-selected: #d6eaf8;
+            --bg-success: #d5f5e3;
+            --btn-bg: #3498db;
+            --btn-hover: #2980b9;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px 10px;
+            touch-action: manipulation;
+        }
+
+        h1 { margin: 0 0 10px 0; font-size: 24px; }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        button {
+            background-color: var(--btn-bg);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        button:hover { background-color: var(--btn-hover); }
+
+        #timer {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: var(--border-color);
+        }
+
+        .board {
+            display: grid;
+            grid-template-columns: repeat(9, 1fr);
+            width: 100%;
+            max-width: 400px;
+            aspect-ratio: 1;
+            background-color: var(--border-color);
+            border: 3px solid var(--border-color);
+            gap: 1px;
+            margin-bottom: 20px;
+        }
+
+        .cell {
+            background-color: var(--board-bg);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: clamp(16px, 5vw, 24px);
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        /* Утолщенные линии для блоков 3x3 */
+        .cell:nth-child(3n) { border-right: 2px solid var(--border-color); }
+        .cell:nth-child(9n) { border-right: none; }
+        .cell:nth-child(n+19):nth-child(-n+27),
+        .cell:nth-child(n+46):nth-child(-n+54) { border-bottom: 2px solid var(--border-color); }
+
+        .cell.fixed { font-weight: bold; color: var(--text-fixed); cursor: default; }
+        .cell.error { color: var(--text-error); font-weight: bold; }
+        
+        .cell.success-anim {
+            animation: pulse-success 0.6s ease-out;
+        }
+
+        @keyframes pulse-success {
+            0% { background-color: var(--bg-success); transform: scale(0.95); }
+            50% { background-color: var(--bg-success); transform: scale(1.05); }
+            100% { background-color: var(--board-bg); transform: scale(1); }
+        }
+
+        .palette {
+            display: flex;
+            justify-content: center;
+            gap: 5px;
+            width: 100%;
+            max-width: 440px;
+            flex-wrap: wrap;
+        }
+
+        .palette-num {
+            width: 40px;
+            height: 40px;
+            background-color: white;
+            border: 2px solid var(--btn-bg);
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 20px;
+            font-weight: bold;
+            color: var(--btn-bg);
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.2s;
+        }
+
+        .palette-num.selected {
+            background-color: var(--btn-bg);
+            color: white;
+            transform: scale(1.1);
+        }
+
+        /* Модальное окно */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+        }
+
+        .modal.active { display: flex; }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        .modal-content h2 { color: var(--btn-hover); margin-top: 0; }
+    </style>
+</head>
+<body>
+
+    <h1>Судоку</h1>
+    
+    <div class="controls">
+        <button onclick="startGame('easy')">Легкий</button>
+        <button onclick="startGame('medium')">Средний</button>
+        <button onclick="startGame('hard')">Тяжелый</button>
+    </div>
+
+    <div id="timer">00:00</div>
+
+    <div class="board" id="board"></div>
+
+    <div class="palette" id="palette">
+        </div>
+
+    <div class="modal" id="modal">
+        <div class="modal-content">
+            <h2>Поздравляем! 🎉</h2>
+            <p>Вы собрали пазл за <br><strong id="final-time">00:00</strong></p>
+            <button onclick="document.getElementById('modal').classList.remove('active'); startGame(currentDifficulty);">Играть снова</button>
+        </div>
+    </div>
+
+    <script>
+        const boardEl = document.getElementById('board');
+        const paletteEl = document.getElementById('palette');
+        const timerEl = document.getElementById('timer');
+        const modalEl = document.getElementById('modal');
+        const finalTimeEl = document.getElementById('final-time');
+
+        let timerInterval;
+        let secondsElapsed = 0;
+        let currentDifficulty = 'easy';
+        let solution = [];
+        let currentBoard = [];
+        let selectedNumber = null;
+
+        // Базовая решенная сетка для быстрой генерации
+        const baseGrid = [
+            [1,2,3, 4,5,6, 7,8,9], [4,5,6, 7,8,9, 1,2,3], [7,8,9, 1,2,3, 4,5,6],
+            [2,3,1, 5,6,4, 8,9,7], [5,6,4, 8,9,7, 2,3,1], [8,9,7, 2,3,1, 5,6,4],
+            [3,1,2, 6,4,5, 9,7,8], [6,4,5, 9,7,8, 3,1,2], [9,7,8, 3,1,2, 6,4,5]
+        ];
+
+        // Инициализация
+        function init() {
+            createPalette();
+            startGame('easy');
+        }
+
+        // Таймер
+        function startTimer() {
+            clearInterval(timerInterval);
+            secondsElapsed = 0;
+            updateTimerDisplay();
+            timerInterval = setInterval(() => {
+                secondsElapsed++;
+                updateTimerDisplay();
+            }, 1000);
+        }
+
+        function stopTimer() { clearInterval(timerInterval); }
+
+        function updateTimerDisplay() {
+            const m = String(Math.floor(secondsElapsed / 60)).padStart(2, '0');
+            const s = String(secondsElapsed % 60).padStart(2, '0');
+            timerEl.textContent = `${m}:${s}`;
+        }
+
+        // Генерация новой игры
+        function startGame(difficulty) {
+            currentDifficulty = difficulty;
+            modalEl.classList.remove('active');
+            generatePuzzle(difficulty);
+            renderBoard();
+            startTimer();
+        }
+
+        // Перемешивание базовой сетки для получения новой случайной
+        function generatePuzzle(difficulty) {
+            solution = JSON.parse(JSON.stringify(baseGrid));
+            
+            // 1. Случайная замена цифр (например, все 1 меняем на 5)
+            const nums = [1,2,3,4,5,6,7,8,9].sort(() => Math.random() - 0.5);
+            for(let r=0; r<9; r++) {
+                for(let c=0; c<9; c++) {
+                    solution[r][c] = nums[solution[r][c]-1];
+                }
+            }
+
+            // Создаем игровую доску с пустыми клетками (0)
+            currentBoard = JSON.parse(JSON.stringify(solution));
+            let cellsToRemove = difficulty === 'easy' ? 30 : difficulty === 'medium' ? 45 : 55;
+
+            while (cellsToRemove > 0) {
+                let r = Math.floor(Math.random() * 9);
+                let c = Math.floor(Math.random() * 9);
+                if (currentBoard[r][c] !== 0) {
+                    currentBoard[r][c] = 0;
+                    cellsToRemove--;
+                }
+            }
+        }
+
+        // Отрисовка поля
+        function renderBoard() {
+            boardEl.innerHTML = '';
+            for (let r = 0; r < 9; r++) {
+                for (let c = 0; c < 9; c++) {
+                    const cell = document.createElement('div');
+                    cell.classList.add('cell');
+                    cell.dataset.r = r;
+                    cell.dataset.c = c;
+                    
+                    if (currentBoard[r][c] !== 0) {
+                        cell.textContent = currentBoard[r][c];
+                        cell.classList.add('fixed');
+                    } else {
+                        // Настройка событий для пустых клеток
+                        cell.addEventListener('click', () => handleCellClick(r, c, cell));
+                        
+                        // Drag & Drop события (для ПК)
+                        cell.addEventListener('dragover', e => e.preventDefault());
+                        cell.addEventListener('drop', e => handleDrop(e, r, c, cell));
+                    }
+                    boardEl.appendChild(cell);
+                }
+            }
+        }
+
+        // Отрисовка палитры цифр
+        function createPalette() {
+            paletteEl.innerHTML = '';
+            for (let i = 1; i <= 9; i++) {
+                const num = document.createElement('div');
+                num.classList.add('palette-num');
+                num.textContent = i;
+                num.draggable = true;
+                
+                // Клик для телефонов
+                num.addEventListener('click', () => {
+                    document.querySelectorAll('.palette-num').forEach(n => n.classList.remove('selected'));
+                    if (selectedNumber === i) {
+                        selectedNumber = null; // Отмена выбора
+                    } else {
+                        selectedNumber = i;
+                        num.classList.add('selected');
+                    }
+                });
+
+                // Drag start для ПК
+                num.addEventListener('dragstart', e => {
+                    e.dataTransfer.setData('text/plain', i);
+                });
+
+                paletteEl.appendChild(num);
+            }
+        }
+
+        // Обработка постановки цифры (через клик)
+        function handleCellClick(r, c, cellEl) {
+            if (cellEl.classList.contains('fixed')) return;
+            
+            // Если кликаем по клетке с ошибкой - очищаем её
+            if (cellEl.classList.contains('error')) {
+                cellEl.textContent = '';
+                cellEl.classList.remove('error');
+                currentBoard[r][c] = 0;
+                return;
+            }
+
+            if (!selectedNumber) return;
+            placeNumber(selectedNumber, r, c, cellEl);
+        }
+
+        // Обработка постановки цифры (через Drag & Drop)
+        function handleDrop(e, r, c, cellEl) {
+            e.preventDefault();
+            const num = parseInt(e.dataTransfer.getData('text/plain'));
+            if (cellEl.classList.contains('fixed') || isNaN(num)) return;
+            placeNumber(num, r, c, cellEl);
+        }
+
+        // Логика проверки и вставки цифры
+        function placeNumber(num, r, c, cellEl) {
+            cellEl.textContent = num;
+            
+            // Проверка: правильная ли цифра?
+            if (solution[r][c] === num) {
+                cellEl.classList.remove('error');
+                currentBoard[r][c] = num;
+                checkAnimations(r, c);
+                checkWin();
+            } else {
+                cellEl.classList.add('error');
+                currentBoard[r][c] = num; // Записываем, чтобы пользователь мог убрать
+            }
+        }
+
+        // Проверка на анимации собранных линий/блоков
+        function checkAnimations(row, col) {
+            let rowComplete = true, colComplete = true, boxComplete = true;
+
+            for(let i=0; i<9; i++) {
+                if(currentBoard[row][i] !== solution[row][i]) rowComplete = false;
+                if(currentBoard[i][col] !== solution[i][col]) colComplete = false;
+            }
+
+            let startR = Math.floor(row / 3) * 3;
+            let startC = Math.floor(col / 3) * 3;
+            for(let r=startR; r<startR+3; r++) {
+                for(let c=startC; c<startC+3; c++) {
+                    if(currentBoard[r][c] !== solution[r][c]) boxComplete = false;
+                }
+            }
+
+            // Запускаем анимации
+            const cells = Array.from(boardEl.children);
+            if(rowComplete) animateGroup(cells.filter(c => c.dataset.r == row));
+            if(colComplete) animateGroup(cells.filter(c => c.dataset.c == col));
+            if(boxComplete) animateGroup(cells.filter(c => 
+                c.dataset.r >= startR && c.dataset.r < startR+3 &&
+                c.dataset.c >= startC && c.dataset.c < startC+3
+            ));
+        }
+
+        function animateGroup(elements) {
+            elements.forEach(el => {
+                el.classList.remove('success-anim');
+                void el.offsetWidth; // Триггер reflow для перезапуска анимации
+                el.classList.add('success-anim');
+            });
+        }
+
+        // Проверка победы
+        function checkWin() {
+            for(let r=0; r<9; r++) {
+                for(let c=0; c<9; c++) {
+                    if(currentBoard[r][c] !== solution[r][c]) return;
+                }
+            }
+            stopTimer();
+            finalTimeEl.textContent = timerEl.textContent;
+            setTimeout(() => modalEl.classList.add('active'), 500); // Небольшая задержка перед модалкой
+        }
+
+        // Запуск
+        init();
+    </script>
+</body>
+</html>
