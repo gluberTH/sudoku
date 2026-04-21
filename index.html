@@ -264,9 +264,64 @@
             [2,3,1, 5,6,4, 8,9,7], [5,6,4, 8,9,7, 2,3,1], [8,9,7, 2,3,1, 5,6,4],
             [3,1,2, 6,4,5, 9,7,8], [6,4,5, 9,7,8, 3,1,2], [9,7,8, 3,1,2, 6,4,5]
         ];
+        // --- ЛОГИКА ТЕМЫ ---
+        function initTheme() {
+            const savedTheme = localStorage.getItem('sudoku_theme');
+            if (savedTheme === 'dark') {
+                document.body.classList.add('dark-theme');
+                document.getElementById('theme-btn').textContent = '☀️ Светлая';
+            }
+        }
 
+        function toggleTheme() {
+            const body = document.body;
+            body.classList.toggle('dark-theme');
+            const isDark = body.classList.contains('dark-theme');
+            localStorage.setItem('sudoku_theme', isDark ? 'dark' : 'light');
+            document.getElementById('theme-btn').textContent = isDark ? '☀️ Светлая' : '🌙 Темная';
+        }
+
+        // --- ЛОГИКА РЕКОРДОВ ---
+        function getRecords() {
+            const rec = localStorage.getItem('sudoku_records');
+            return rec ? JSON.parse(rec) : { easy: [], medium: [], hard: [] };
+        }
+
+        function renderRecords(difficulty) {
+            const records = getRecords()[difficulty];
+            const container = document.getElementById('records');
+            
+            if (records.length === 0) {
+                container.innerHTML = '<p>Нет рекордов</p>';
+                return;
+            }
+            
+            let html = '';
+            records.forEach((time, index) => {
+                const m = String(Math.floor(time / 60)).padStart(2, '0');
+                const s = String(time % 60).padStart(2, '0');
+                html += `<p>${index + 1}: ${m}:${s}</p>`;
+            });
+            container.innerHTML = html;
+        }
+
+        function checkAndSaveRecord(seconds, diff) {
+            const allRecords = getRecords();
+            const records = allRecords[diff];
+            
+            records.push(seconds);
+            records.sort((a, b) => a - b); // Сортируем по возрастанию времени
+            records.splice(3); // Оставляем только топ-3
+            
+            allRecords[diff] = records;
+            localStorage.setItem('sudoku_records', JSON.stringify(allRecords));
+            
+            // Возвращаем true, если наше текущее время попало в топ-3
+            return records.includes(seconds);
+        }
         // Инициализация
         function init() {
+            initTheme();
             createPalette();
             startGame('easy');
         }
@@ -298,6 +353,7 @@
             renderBoard();
             startTimer();
             updatePaletteState();
+            renderRecords(difficulty);
         }
 
         // Перемешивание базовой сетки для получения новой случайной
@@ -487,6 +543,7 @@ function updatePaletteState() {
     });
 }
         // Проверка победы
+        // Проверка победы (ОБНОВЛЕНО)
         function checkWin() {
             for(let r=0; r<9; r++) {
                 for(let c=0; c<9; c++) {
@@ -495,7 +552,22 @@ function updatePaletteState() {
             }
             stopTimer();
             finalTimeEl.textContent = timerEl.textContent;
-            setTimeout(() => modalEl.classList.add('active'), 500); // Небольшая задержка перед модалкой
+            
+            // --- ПРОВЕРКА РЕКОРДА И ОБНОВЛЕНИЕ МОДАЛКИ ---
+            const isRecord = checkAndSaveRecord(secondsElapsed, currentDifficulty);
+            const modalTitle = document.getElementById('modal-title');
+            
+            if (isRecord) {
+                modalTitle.textContent = '🏆 Новый рекорд! 🏆';
+                modalTitle.style.color = '#f39c12'; // Золотой цвет для рекорда
+            } else {
+                modalTitle.textContent = 'Поздравляем! 🎉';
+                modalTitle.style.color = 'var(--btn-hover)'; // Обычный цвет
+            }
+            
+            renderRecords(currentDifficulty); // Обновляем список рекордов на экране
+            
+            setTimeout(() => modalEl.classList.add('active'), 500); 
         }
 
         // Запуск
