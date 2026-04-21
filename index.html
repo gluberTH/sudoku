@@ -92,7 +92,19 @@
         .cell:nth-child(n+46):nth-child(-n+54) { border-bottom: 2px solid var(--border-color); }
 
         .cell.fixed { font-weight: bold; color: var(--text-fixed); cursor: default; }
-        .cell.error { color: var(--text-error); font-weight: bold; }
+        .cell.error { 
+    color: var(--text-error); 
+    font-weight: bold; 
+    animation: shake 0.3s ease-in-out; /* Подключаем анимацию */
+}
+
+/* Сама анимация тряски */
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-4px); }
+    50% { transform: translateX(4px); }
+    75% { transform: translateX(-4px); }
+}
         
         .cell.success-anim {
             animation: pulse-success 0.6s ease-out;
@@ -356,9 +368,12 @@
                 checkAnimations(r, c);
                 checkWin();
             } else {
-                cellEl.classList.add('error');
-                currentBoard[r][c] = num; // Записываем, чтобы пользователь мог убрать
-            }
+        // --- ИЗМЕНЕНИЯ ЗДЕСЬ ---
+        cellEl.classList.remove('error'); // Снимаем класс, если он уже был
+        void cellEl.offsetWidth;          // Триггер reflow для перезапуска анимации CSS
+        cellEl.classList.add('error');    // Вешаем класс заново, чтобы пошла тряска
+        currentBoard[r][c] = num; 
+    }
         }
 
         // Проверка на анимации собранных линий/блоков
