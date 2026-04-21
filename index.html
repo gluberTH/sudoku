@@ -84,6 +84,13 @@
             cursor: pointer;
             transition: background 0.3s;
         }
+        .palette-num.completed {
+            background-color: var(--cell-border);
+            color: white;
+            border-color: var(--cell-border);
+            opacity: 0.5;
+            pointer-events: none; /* Полностью отключает клики и перетаскивание */
+        }    
 
         /* Утолщенные линии для блоков 3x3 */
         .cell:nth-child(3n) { border-right: 2px solid var(--border-color); }
@@ -93,18 +100,18 @@
 
         .cell.fixed { font-weight: bold; color: var(--text-fixed); cursor: default; }
         .cell.error { 
-    color: var(--text-error); 
-    font-weight: bold; 
-    animation: shake 0.3s ease-in-out; /* Подключаем анимацию */
-}
+            color: var(--text-error); 
+            font-weight: bold; 
+            animation: shake 0.3s ease-in-out; /* Подключаем анимацию */
+        }
 
-/* Сама анимация тряски */
-@keyframes shake {
-    0%, 100% { transform: translateX(0); }
-    25% { transform: translateX(-4px); }
-    50% { transform: translateX(4px); }
-    75% { transform: translateX(-4px); }
-}
+        /* Сама анимация тряски */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-4px); }
+            50% { transform: translateX(4px); }
+            75% { transform: translateX(-4px); }
+        }
         
         .cell.success-anim {
             animation: pulse-success 0.6s ease-out;
@@ -250,6 +257,7 @@
             generatePuzzle(difficulty);
             renderBoard();
             startTimer();
+            updatePaletteState();
         }
 
         // Перемешивание базовой сетки для получения новой случайной
@@ -373,7 +381,7 @@
         void cellEl.offsetWidth;          // Триггер reflow для перезапуска анимации CSS
         cellEl.classList.add('error');    // Вешаем класс заново, чтобы пошла тряска
         currentBoard[r][c] = num; 
-    }
+    } updatePaletteState();
         }
 
         // Проверка на анимации собранных линий/блоков
@@ -410,7 +418,34 @@
                 el.classList.add('success-anim');
             });
         }
+// Обновление состояния палитры (деактивация собранных цифр)
+function updatePaletteState() {
+    // 1. Считаем, сколько раз каждая правильная цифра есть на доске
+    const counts = {1:0, 2:0, 3:0, 4:0, 5:0, 6:0, 7:0, 8:0, 9:0};
+    
+    for (let r = 0; r < 9; r++) {
+        for (let c = 0; c < 9; c++) {
+            // Если клетка не пустая и цифра верная
+            if (currentBoard[r][c] !== 0 && currentBoard[r][c] === solution[r][c]) {
+                counts[currentBoard[r][c]]++;
+            }
+        }
+    }
 
+    // 2. Проходим по кнопкам палитры и отключаем те, которых уже 9
+    const paletteBtns = document.querySelectorAll('.palette-num');
+    paletteBtns.forEach((btn, index) => {
+        const num = index + 1;
+        if (counts[num] === 9) {
+            btn.classList.add('completed');
+            btn.classList.remove('selected'); // Снимаем выделение, если она была выбрана
+            if (selectedNumber === num) selectedNumber = null;
+        } else {
+            // Если пользователь вдруг стер/заменил правильную цифру, возвращаем кнопку
+            btn.classList.remove('completed');
+        }
+    });
+}
         // Проверка победы
         function checkWin() {
             for(let r=0; r<9; r++) {
