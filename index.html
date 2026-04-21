@@ -55,10 +55,18 @@
             position: absolute;
             top: 15px;
             right: 15px;
-            background: transparent;
-            color: var(--text-color);
-            padding: 5px 10px;
-            font-size: 14px;
+            background: transparent !important; /* !important перебьет общие стили кнопок */
+            border: none;
+            font-size: 24px; /* Эмодзи можно сделать чуть крупнее */
+            cursor: pointer;
+            box-shadow: none;
+            padding: 5px;
+        }
+        
+        /* Убираем синий фон при наведении на эмодзи */
+        .theme-toggle:hover {
+            background-color: transparent !important; 
+            transform: scale(1.1); /* Оставим легкое увеличение для отклика */
         }
 
         /* Блок рекордов */
@@ -80,6 +88,12 @@
             display: flex;
             gap: 10px;
             margin-bottom: 15px;
+        }
+        /* Стиль для выбранного уровня сложности */
+        .controls button.active {
+            background-color: var(--btn-hover);
+            box-shadow: inset 0 3px 5px rgba(0,0,0,0.3); /* Эффект вдавленной кнопки */
+            font-weight: bold;
         }
 
         button {
@@ -225,9 +239,9 @@
     <h1>Судоку</h1>
     
     <div class="controls">
-        <button onclick="startGame('easy')">Легкий</button>
-        <button onclick="startGame('medium')">Средний</button>
-        <button onclick="startGame('hard')">Тяжелый</button>
+        <button id="btn-easy" onclick="startGame('easy')">Легкий</button>
+        <button id="btn-medium" onclick="startGame('medium')">Средний</button>
+        <button id="btn-hard" onclick="startGame('hard')">Тяжелый</button>
     </div>
     <div class="records-container" id="records"></div>
     <div id="timer">00:00</div>
@@ -349,6 +363,12 @@
         // Генерация новой игры
         function startGame(difficulty) {
             currentDifficulty = difficulty;
+            
+            // --- НОВОЕ: Подсвечиваем активную кнопку уровня ---
+            document.querySelectorAll('.controls button').forEach(btn => btn.classList.remove('active'));
+            document.getElementById('btn-' + difficulty).classList.add('active');
+            // --------------------------------------------------
+
             modalEl.classList.remove('active');
             generatePuzzle(difficulty);
             renderBoard();
