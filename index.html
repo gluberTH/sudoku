@@ -55,7 +55,6 @@
             right: 15px;
             background: transparent;
             color: var(--text-color);
-            border: 2px solid var(--border-color);
             padding: 5px 10px;
             font-size: 14px;
         }
@@ -219,7 +218,7 @@
     </style>
 </head>
 <body>
-    <button class="theme-toggle" onclick="toggleTheme()" id="theme-btn">🌙 Темная</button>
+    <button class="theme-toggle" onclick="toggleTheme()" id="theme-btn">🌙</button>
 
     <h1>Судоку</h1>
     
@@ -269,7 +268,7 @@
             const savedTheme = localStorage.getItem('sudoku_theme');
             if (savedTheme === 'dark') {
                 document.body.classList.add('dark-theme');
-                document.getElementById('theme-btn').textContent = '☀️ Светлая';
+                document.getElementById('theme-btn').textContent = '☀️';
             }
         }
 
@@ -278,7 +277,7 @@
             body.classList.toggle('dark-theme');
             const isDark = body.classList.contains('dark-theme');
             localStorage.setItem('sudoku_theme', isDark ? 'dark' : 'light');
-            document.getElementById('theme-btn').textContent = isDark ? '☀️ Светлая' : '🌙 Темная';
+            document.getElementById('theme-btn').textContent = isDark ? '☀️' : '🌙';
         }
 
         // --- ЛОГИКА РЕКОРДОВ ---
