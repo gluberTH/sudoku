@@ -5,8 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="apple-touch-icon" href="https://img.freepik.com/free-vector/sudoku-word-logo-design_1308-114424.jpg?semt=ais_hybrid&w=740&q=80">
-    <title>Судоку</title>
+    <link rel="apple-touch-icon" href="https://MyFitTrainingPlan.com/sudokulogo.jpg">
+    <title>Sudoku Ultimate: Daily Master Puzzles</title>
+    <meta name='description' content='Master daily Sudoku challenges with clean intuitive gameplay. Multiple difficulties, infinite puzzles.'>
+    <meta property='og:type' content='website'>
+    <link rel='canonical' href='gluberth.github.io/sudoku/'>
+    <meta property='og:url' content='https://gluberth.github.io/sudoku/'>
+    <meta property='og:title' content='Sudoku Ultimate: Daily Master Puzzles'>
+    <meta property='og:description' content='Master daily Sudoku challenges. Clean interface, infinite free puzzles!'>
+    <meta property='og:image' content='https://MyFitTrainingPlan.com/sudokusharebanner.jpg'>
+    <meta property='og:site_name' content='Sudoku Ultimate'>
+    <meta name='twitter:card' content='summary_large_image'>
+    <meta name='twitter:title' content='Train Your Brain: Sudoku Ultimate'>
+    <meta name='twitter:description' content='Infinite free Sudoku puzzles with daily brain training challenges.'>
+    <meta name='twitter:image' content='https://MyFitTrainingPlan.com/sudokusharebanner.jpg'>
     <style>
         :root {
             --bg-color: #f0f4f8;
@@ -236,12 +248,12 @@
 <body>
     <button class="theme-toggle" onclick="toggleTheme()" id="theme-btn">🌙</button>
 
-    <h1>Судоку</h1>
+    <h1>Sudoku</h1>
     
     <div class="controls">
-        <button id="btn-easy" onclick="startGame('easy')">Легкий</button>
-        <button id="btn-medium" onclick="startGame('medium')">Средний</button>
-        <button id="btn-hard" onclick="startGame('hard')">Тяжелый</button>
+        <button id="btn-easy" onclick="startGame('easy')">Easy</button>
+        <button id="btn-medium" onclick="startGame('medium')">Medium</button>
+        <button id="btn-hard" onclick="startGame('hard')">Hard</button>
     </div>
     <div class="records-container" id="records"></div>
     <div id="timer">00:00</div>
@@ -253,9 +265,9 @@
 
     <div class="modal" id="modal">
         <div class="modal-content">
-            <h2 id="modal-title">Поздравляем! 🎉</h2>
-            <p>Вы собрали пазл за <br><strong id="final-time">00:00</strong></p>
-            <button onclick="document.getElementById('modal').classList.remove('active'); startGame(currentDifficulty);">Играть снова</button>
+            <h2 id="modal-title">Congratulations! 🎉</h2>
+            <p>You completed the puzzle in <br><strong id="final-time">00:00</strong></p>
+            <button onclick="document.getElementById('modal').classList.remove('active'); startGame(currentDifficulty);">Play again</button>
         </div>
     </div>
 
@@ -307,7 +319,7 @@
             const container = document.getElementById('records');
             
             if (records.length === 0) {
-                container.innerHTML = '<p>Нет рекордов</p>';
+                container.innerHTML = '<p>No high score</p>';
                 return;
             }
             
@@ -579,10 +591,10 @@ function updatePaletteState() {
             const modalTitle = document.getElementById('modal-title');
             
             if (isRecord) {
-                modalTitle.textContent = '🏆 Новый рекорд! 🏆';
+                modalTitle.textContent = '🏆 New High Score! 🏆';
                 modalTitle.style.color = '#f39c12'; // Золотой цвет для рекорда
             } else {
-                modalTitle.textContent = 'Поздравляем! 🎉';
+                modalTitle.textContent = 'Congratulations! 🎉';
                 modalTitle.style.color = 'var(--btn-hover)'; // Обычный цвет
             }
             
